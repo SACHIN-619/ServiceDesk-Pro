@@ -398,15 +398,26 @@ const TicketDetailModal = ({ ticketId, isOpen, onClose, onTicketUpdated }) => {
                       </>
                     )}
 
-                    {/* Employee resolution actions */}
+                    {/* Employee & Admin resolution verification actions */}
                     {ticket.status === 'RESOLVED' && (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => handleStatusUpdate('CLOSED', 'Confirmed and closed by user.')}>
-                          Confirm & Close Ticket
-                        </button>
-                        <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: '#f472b6', borderColor: '#ec4899' }} onClick={() => handleStatusUpdate('REOPENED', 'Issue re-occurred after resolution.')}>
-                          Reopen Ticket
-                        </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {(user?.role === 'EMPLOYEE' || user?.role === 'ADMIN' || user?.role === 'SYSTEM_ADMIN' || user?.role === 'IT_MANAGER') ? (
+                          <>
+                            <div style={{ fontSize: '0.78rem', color: '#6ee7b7', background: 'rgba(16, 185, 129, 0.1)', padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                              ℹ Technician has marked this resolved. Please verify the fix.
+                            </div>
+                            <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', background: '#10b981' }} onClick={() => handleStatusUpdate('CLOSED', 'Confirmed and closed by user.')}>
+                              <CheckCircle size={16} /> Confirm & Close Ticket
+                            </button>
+                            <button className="btn-secondary" style={{ width: '100%', justifyContent: 'center', color: '#f472b6', borderColor: '#ec4899' }} onClick={() => handleStatusUpdate('REOPENED', 'Issue re-occurred after resolution.')}>
+                              Reopen Ticket
+                            </button>
+                          </>
+                        ) : (
+                          <div style={{ fontSize: '0.8rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '10px 12px', borderRadius: 6, border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                            ⏳ <strong>Pending Requester Verification:</strong> Waiting for Employee to verify resolution and Confirm & Close.
+                          </div>
+                        )}
                       </div>
                     )}
 
