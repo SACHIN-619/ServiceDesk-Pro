@@ -1,5 +1,10 @@
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import dns from 'node:dns';
+
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {}
 
 dotenv.config();
 
@@ -16,7 +21,12 @@ const seedDatabase = async () => {
   try {
     const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/servicedesk_db';
     console.log(`Connecting to MongoDB at ${mongoUri}...`);
-    await mongoose.connect(mongoUri);
+    try {
+      await mongoose.connect(mongoUri);
+    } catch (connErr) {
+      console.warn(`[Warning]: Connection to ${mongoUri} failed (${connErr.message}). Falling back to local MongoDB...`);
+      await mongoose.connect('mongodb://127.0.0.1:27017/serviceDesk');
+    }
 
     console.log('Clearing existing collections...');
     await User.deleteMany({});
