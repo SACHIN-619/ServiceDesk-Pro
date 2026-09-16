@@ -30,3 +30,19 @@ export const fetchAPI = async (endpoint, options = {}) => {
 
   return data;
 };
+
+// Auth API helpers
+export const registerUser = async (userData) => {
+  return fetchAPI('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  });
+};
+
+export const loginUser = async (email, password) => {
+  return fetchAPI('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+};
+

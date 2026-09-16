@@ -4,16 +4,16 @@ import { fetchAPI } from '../services/api';
 const AuthContext = createContext();
 
 export const DEMO_CREDENTIALS = {
-  ADMIN: { email: 'admin@servicedesk.com', password: 'admin123', label: '👑 Admin' },
-  IT_MANAGER: { email: 'manager@servicedesk.com', password: 'manager123', label: '👨‍💼 IT Manager' },
-  TECHNICIAN: { email: 'tech@servicedesk.com', password: 'tech123', label: '🧑‍💻 Technician' },
-  EMPLOYEE: { email: 'employee@servicedesk.com', password: 'employee123', label: '👤 Employee' },
-  ASSET_MANAGER: { email: 'assetmanager@servicedesk.com', password: 'asset123', label: '🖥️ Asset Mgr' }
+  ADMIN: { email: 'admin@servicedesk.local', password: 'Admin@123456', label: '👑 Admin' },
+  IT_MANAGER: { email: 'manager@servicedesk.local', password: 'Manager@123456', label: '👨‍💼 IT Manager' },
+  TECHNICIAN: { email: 'tech1@servicedesk.local', password: 'Tech@123456', label: '🧑‍💻 Technician' },
+  EMPLOYEE: { email: 'employee1@servicedesk.local', password: 'Employee@123456', label: '👤 Employee' },
+  ASSET_MANAGER: { email: 'assetmgr@servicedesk.local', password: 'Asset@123456', label: '🖥️ Asset Mgr' }
 };
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [currentRole, setCurrentRole] = useState(localStorage.getItem('servicedesk_role') || 'ADMIN');
+  const [currentRole, setCurrentRole] = useState(localStorage.getItem('servicedesk_role') || 'EMPLOYEE');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,17 +23,8 @@ export const AuthProvider = ({ children }) => {
   const checkLoggedInUser = async () => {
     const token = localStorage.getItem('servicedesk_token');
     if (!token) {
-      // Auto-authenticate as Admin on first dev launch if available
-      try {
-        const adminData = await login(DEMO_CREDENTIALS.ADMIN.email, DEMO_CREDENTIALS.ADMIN.password);
-        setUser(adminData);
-        setCurrentRole(adminData.role);
-      } catch (e) {
-        setUser(null);
-        setCurrentRole('EMPLOYEE');
-      } finally {
-        setLoading(false);
-      }
+      setUser(null);
+      setLoading(false);
       return;
     }
 

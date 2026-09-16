@@ -9,7 +9,7 @@ import CreateTicketModal from './components/CreateTicketModal';
 import TicketDetailModal from './components/TicketDetailModal';
 import AuthModal from './components/AuthModal';
 
-// Pages
+import Login from './pages/Login';
 import AdminDashboard from './pages/AdminDashboard';
 import ITManagerDashboard from './pages/ITManagerDashboard';
 import TechnicianDashboard from './pages/TechnicianDashboard';
@@ -108,6 +108,20 @@ const MainLayout = () => {
         return <EmployeeDashboard onSelectTicket={handleOpenDetail} onCreateTicketClick={() => setIsCreateModalOpen(true)} />;
     }
   };
+
+  if (!user) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Navbar
+          onCreateTicketClick={() => setIsAuthModalOpen(true)}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+        />
+        <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Login />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

@@ -72,34 +72,8 @@ const Navbar = ({ onCreateTicketClick, onOpenAuthModal }) => {
 
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 100 }}>
-      {/* Top Interactive Role Switcher Banner */}
-      <div className="role-switcher-bar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Sparkles size={16} color="#a855f7" />
-          <span style={{ fontWeight: 700, color: '#c084fc', letterSpacing: '0.02em' }}>
-            DEV QUICK-LOGIN SWITCHER:
-          </span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-            Authenticates live JWT across 5 RBAC personas:
-          </span>
-        </div>
-
-        <div className="role-btn-group">
-          {roles.map((r) => (
-            <button
-              key={r.key}
-              className={`role-btn ${currentRole === r.key ? 'active' : ''}`}
-              disabled={switchingRole}
-              onClick={() => handleRoleSwitch(r.key)}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Main Glass Header */}
-      <div className="glass-nav" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="glass-nav" style={{ padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {/* Brand Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
           <div style={{
