@@ -10,6 +10,7 @@ import TicketDetailModal from './components/TicketDetailModal';
 import AuthModal from './components/AuthModal';
 
 import Login from './pages/Login';
+import HomePage from './pages/HomePage';
 import AdminDashboard from './pages/AdminDashboard';
 import ITManagerDashboard from './pages/ITManagerDashboard';
 import TechnicianDashboard from './pages/TechnicianDashboard';
@@ -139,6 +140,8 @@ const MainLayout = () => {
           <Routes>
             <Route path="/" element={renderDashboardByRole()} />
             <Route path="/dashboard" element={renderDashboardByRole()} />
+            <Route path="/workflow" element={<HomePage />} />
+            <Route path="/home" element={<HomePage />} />
             <Route
               path="/tickets"
               element={

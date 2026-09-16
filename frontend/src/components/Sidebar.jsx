@@ -10,7 +10,8 @@ import {
   BarChart3,
   FileText,
   Users,
-  Bot
+  Bot,
+  Workflow
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -23,6 +24,7 @@ const Sidebar = () => {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: allRoles },
+    { path: '/workflow', label: 'ITSM Workflow', icon: Workflow, roles: allRoles },
     { path: '/tickets', label: 'Tickets Command', icon: Ticket, roles: allRoles },
     { path: '/sla', label: 'SLA Engine', icon: Clock, roles: managerAndAdminRoles },
     { path: '/assets', label: 'Asset Management', icon: HardDrive, roles: assetRoles },
