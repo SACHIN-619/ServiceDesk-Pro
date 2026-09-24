@@ -25,7 +25,7 @@ const AdminDashboard = ({ onSelectTicket }) => {
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
-  const [newUserPassword, setNewUserPassword] = useState('password123');
+  const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState('EMPLOYEE');
   const [newUserDept, setNewUserDept] = useState('General');
 
@@ -103,6 +103,7 @@ const AdminDashboard = ({ onSelectTicket }) => {
       setShowCreateUserModal(false);
       setNewUserName('');
       setNewUserEmail('');
+      setNewUserPassword('');
       loadUsers();
     } catch (e) {
       showToast(e.message, 'error');
@@ -575,6 +576,7 @@ const AdminDashboard = ({ onSelectTicket }) => {
                 <input
                   type="password"
                   className="glass-input"
+                  placeholder="Enter initial password (min 6 chars)"
                   value={newUserPassword}
                   onChange={(e) => setNewUserPassword(e.target.value)}
                   required

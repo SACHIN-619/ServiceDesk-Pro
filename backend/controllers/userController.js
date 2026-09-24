@@ -64,7 +64,7 @@ export const createUser = async (req, res) => {
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
-      password: password || 'password123',
+      password,
       role: userRole,
       department: department || 'General',
       phone: phone || '',

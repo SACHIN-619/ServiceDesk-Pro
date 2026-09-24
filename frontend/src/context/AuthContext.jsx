@@ -4,11 +4,11 @@ import { fetchAPI } from '../services/api';
 const AuthContext = createContext();
 
 export const DEMO_CREDENTIALS = {
-  ADMIN: { email: 'admin@servicedesk.local', password: 'Admin@123456', label: '👑 Admin' },
-  IT_MANAGER: { email: 'manager@servicedesk.local', password: 'Manager@123456', label: '👨‍💼 IT Manager' },
-  TECHNICIAN: { email: 'tech1@servicedesk.local', password: 'Tech@123456', label: '🧑‍💻 Technician' },
-  EMPLOYEE: { email: 'employee1@servicedesk.local', password: 'Employee@123456', label: '👤 Employee' },
-  ASSET_MANAGER: { email: 'assetmgr@servicedesk.local', password: 'Asset@123456', label: '🖥️ Asset Mgr' }
+  ADMIN: { email: 'admin@servicedesk.com', password: 'admin123', label: '👑 Admin' },
+  IT_MANAGER: { email: 'manager@servicedesk.com', password: 'manager123', label: '👨‍💼 IT Manager' },
+  TECHNICIAN: { email: 'tech@servicedesk.com', password: 'tech123', label: '🧑‍💻 Technician' },
+  EMPLOYEE: { email: 'employee@servicedesk.com', password: 'employee123', label: '👤 Employee' },
+  ASSET_MANAGER: { email: 'assetmanager@servicedesk.com', password: 'asset123', label: '🖥️ Asset Mgr' }
 };
 
 export const AuthProvider = ({ children }) => {

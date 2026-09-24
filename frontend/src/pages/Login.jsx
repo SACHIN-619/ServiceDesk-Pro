@@ -11,9 +11,9 @@ const Login = () => {
   const [mode, setMode] = useState('signin'); // 'signin' | 'signup'
   const [loading, setLoading] = useState(false);
 
-  // Sign In State
-  const [signInEmail, setSignInEmail] = useState('admin@servicedesk.local');
-  const [signInPassword, setSignInPassword] = useState('Admin@123456');
+  // Sign In State (clean state for live login)
+  const [signInEmail, setSignInEmail] = useState('');
+  const [signInPassword, setSignInPassword] = useState('');
 
   // Sign Up State
   const [signUpData, setSignUpData] = useState({
@@ -28,11 +28,11 @@ const Login = () => {
   const [signUpMessage, setSignUpMessage] = useState('');
 
   const demoAccounts = [
-    { role: 'System Admin', email: 'admin@servicedesk.local', pass: 'Admin@123456', key: 'ADMIN', color: '#8b5cf6', icon: '👑' },
-    { role: 'IT Manager', email: 'manager@servicedesk.local', pass: 'Manager@123456', key: 'IT_MANAGER', color: '#3b82f6', icon: '👨‍💼' },
-    { role: 'Technician', email: 'tech1@servicedesk.local', pass: 'Tech@123456', key: 'TECHNICIAN', color: '#06b6d4', icon: '🧑‍💻' },
-    { role: 'Employee', email: 'employee1@servicedesk.local', pass: 'Employee@123456', key: 'EMPLOYEE', color: '#10b981', icon: '👤' },
-    { role: 'Asset Manager', email: 'assetmgr@servicedesk.local', pass: 'Asset@123456', key: 'ASSET_MANAGER', color: '#f59e0b', icon: '🖥️' }
+    { role: 'System Admin', email: 'admin@servicedesk.com', pass: 'admin123', key: 'ADMIN', color: '#8b5cf6', icon: '👑' },
+    { role: 'IT Manager', email: 'manager@servicedesk.com', pass: 'manager123', key: 'IT_MANAGER', color: '#3b82f6', icon: '👨‍💼' },
+    { role: 'Technician', email: 'tech@servicedesk.com', pass: 'tech123', key: 'TECHNICIAN', color: '#06b6d4', icon: '🧑‍💻' },
+    { role: 'Employee', email: 'employee@servicedesk.com', pass: 'employee123', key: 'EMPLOYEE', color: '#10b981', icon: '👤' },
+    { role: 'Asset Manager', email: 'assetmanager@servicedesk.com', pass: 'asset123', key: 'ASSET_MANAGER', color: '#f59e0b', icon: '🖥️' }
   ];
 
   const handleSignIn = async (e) => {

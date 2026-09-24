@@ -8,10 +8,10 @@ const AssetModal = ({ isOpen, onClose, onAssetCreated }) => {
 
   const [name, setName] = useState('');
   const [type, setType] = useState('Laptop');
-  const [brand, setBrand] = useState('Dell');
+  const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
-  const [cost, setCost] = useState(1200);
+  const [cost, setCost] = useState('');
   const [specifications, setSpecifications] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [users, setUsers] = useState([]);
@@ -49,7 +49,7 @@ const AssetModal = ({ isOpen, onClose, onAssetCreated }) => {
           brand,
           model,
           serialNumber,
-          cost,
+          cost: cost ? parseFloat(cost) : 0,
           specifications,
           assignedTo: assignedTo || null
         })
@@ -57,6 +57,13 @@ const AssetModal = ({ isOpen, onClose, onAssetCreated }) => {
 
       showToast(`Asset ${asset.assetTag} registered successfully!`, 'success');
       onAssetCreated(asset);
+      setName('');
+      setBrand('');
+      setModel('');
+      setSerialNumber('');
+      setCost('');
+      setSpecifications('');
+      setAssignedTo('');
       onClose();
     } catch (err) {
       showToast(err.message || 'Failed to create asset', 'error');

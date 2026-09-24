@@ -79,40 +79,51 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'A user with this email already exists' });
     }
 
-    // Public self-registration ALWAYS creates EMPLOYEE with PENDING status
+    // If this is the very first user in the database, promote to active ADMIN automatically (no seeding required)
+    const userCount = await User.countDocuments();
+    const isFirstUser = userCount === 0;
+    const userRole = isFirstUser ? 'ADMIN' : 'EMPLOYEE';
+    const userStatus = isFirstUser ? 'ACTIVE' : 'PENDING';
+
     const user = await User.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password,
-      role: 'EMPLOYEE',
-      department: department || 'General',
-      status: 'PENDING',
+      role: userRole,
+      department: department || (isFirstUser ? 'Executive IT' : 'General'),
+      status: userStatus,
       active: true
     });
 
-    // Notify all System Admins of the new registration request
-    const adminUsers = await User.find({ role: { $in: ['ADMIN', 'SYSTEM_ADMIN'] } });
-    for (const admin of adminUsers) {
-      await createAndEmitNotification({
-        recipient: admin._id,
-        title: 'New Account Approval Request',
-        message: `Employee "${user.name}" (${user.email}) has requested account access.`,
-        link: '/admin?tab=pending',
-        type: 'USER_REGISTRATION'
-      });
+    if (!isFirstUser) {
+      // Notify all System Admins of the new registration request
+      const adminUsers = await User.find({ role: { $in: ['ADMIN', 'SYSTEM_ADMIN'] } });
+      for (const admin of adminUsers) {
+        await createAndEmitNotification({
+          recipient: admin._id,
+          title: 'New Account Approval Request',
+          message: `Employee "${user.name}" (${user.email}) has requested account access.`,
+          link: '/admin?tab=pending',
+          type: 'USER_REGISTRATION'
+        });
+      }
     }
 
     await AuditLog.create({
       actor: user._id,
       actorName: user.name,
-      actorRole: 'EMPLOYEE',
-      action: 'USER_REGISTERED',
+      actorRole: userRole,
+      action: isFirstUser ? 'INITIAL_ADMIN_REGISTERED' : 'USER_REGISTERED',
       target: `User ${user.email}`,
-      details: `Public registration submitted for "${user.name}". Status: PENDING admin approval.`
+      details: isFirstUser
+        ? `Initial platform Administrator account created for "${user.name}".`
+        : `Public registration submitted for "${user.name}". Status: PENDING admin approval.`
     });
 
     res.status(201).json({
-      message: 'Registration submitted successfully! Your account is PENDING approval from a System Administrator.',
+      message: isFirstUser
+        ? 'Initial Administrator account created successfully! You can now log in with your credentials.'
+        : 'Registration submitted successfully! Your account is PENDING approval from a System Administrator.',
       user: {
         _id: user._id,
         name: user.name,
