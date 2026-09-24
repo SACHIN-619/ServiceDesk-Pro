@@ -34,9 +34,10 @@ export const NotificationProvider = ({ children }) => {
       loadNotifications();
 
       // Connect Socket.IO
-      const socketHost = window.location.origin.includes('5173')
-        ? 'http://localhost:5000'
-        : window.location.origin;
+      const envBackend = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL;
+      const socketHost = envBackend
+        ? envBackend.replace(/\/$/, '')
+        : (window.location.origin.includes('5173') ? 'http://localhost:5000' : window.location.origin);
 
       const socket = io(socketHost, {
         transports: ['websocket', 'polling']
