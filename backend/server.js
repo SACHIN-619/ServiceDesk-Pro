@@ -52,7 +52,17 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Root Status Health Check
+// Root Status & Health Check
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    service: 'ServiceDesk Pro ITSM Backend API',
+    version: '1.0.0',
+    documentation: '/api/health',
+    timestamp: new Date()
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
