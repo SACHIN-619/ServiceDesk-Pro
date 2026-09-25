@@ -174,43 +174,6 @@ const Login = () => {
         {/* MODE 1: SIGN IN */}
         {mode === 'signin' && (
           <div>
-            {/* Quick Demo Credential Pills */}
-            <div style={{
-              background: 'rgba(30, 41, 59, 0.5)',
-              padding: '14px 16px',
-              borderRadius: 12,
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              marginBottom: 24
-            }}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#c084fc', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Sparkles size={14} /> Quick Demo Logins (Click to Autofill):
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {demoAccounts.map((d) => (
-                  <button
-                    key={d.key}
-                    type="button"
-                    onClick={() => fillDemoAccount(d)}
-                    style={{
-                      fontSize: '0.76rem',
-                      fontWeight: 600,
-                      padding: '5px 10px',
-                      borderRadius: 7,
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      background: signInEmail === d.email ? 'rgba(59, 130, 246, 0.25)' : 'rgba(15, 23, 42, 0.6)',
-                      color: signInEmail === d.email ? '#38bdf8' : '#e2e8f0',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4
-                    }}
-                  >
-                    <span>{d.icon}</span> {d.role}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <form onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="form-group">
                 <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
