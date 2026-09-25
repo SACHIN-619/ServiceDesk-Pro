@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import SLAPolicy from '../models/SLAPolicy.js';
 import Ticket from '../models/Ticket.js';
 import AuditLog from '../models/AuditLog.js';
@@ -33,6 +34,9 @@ export const calculateDeadlines = async (priority = 'Medium', createdAt = new Da
 };
 
 export const checkSLABreaches = async () => {
+  if (mongoose.connection.readyState !== 1) {
+    return;
+  }
   const now = new Date();
 
   try {

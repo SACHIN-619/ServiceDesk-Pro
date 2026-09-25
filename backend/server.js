@@ -92,7 +92,7 @@ setInterval(() => {
 
 const PORT = process.env.PORT || 5000;
 
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`[ServiceDesk Pro Server]: Listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode.`);
-  console.log(`[Health Endpoint]: http://localhost:${PORT}/api/health`);
+  console.log(`[Health Endpoint]: /api/health`);
 });
