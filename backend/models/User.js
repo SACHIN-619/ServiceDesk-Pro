@@ -24,6 +24,15 @@ const userSchema = new mongoose.Schema({
   active: { type: Boolean, default: true }
 }, { timestamps: true });
 
+userSchema.pre('validate', function (next) {
+  if (this.role) {
+    let r = String(this.role).trim().toUpperCase().replace(/[\s-]+/g, '_');
+    if (r === 'SYSTEM_ADMIN') r = 'ADMIN';
+    this.role = r;
+  }
+  next();
+});
+
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);

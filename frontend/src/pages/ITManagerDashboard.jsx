@@ -13,12 +13,18 @@ import {
   TrendingUp,
   Sliders,
   Filter,
-  BarChart2
+  BarChart2,
+  UserPlus,
+  XCircle,
+  Search,
+  Check,
+  X
 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 import TicketList from '../components/TicketList';
+import { normalizeRole, formatRoleLabel } from '../utils/roles';
 
-const ITManagerDashboard = ({ onSelectTicket }) => {
+const ITManagerDashboard = ({ onSelectTicket, initialTab = 'overview' }) => {
   const { showToast } = useNotification();
   const [data, setData] = useState(null);
   const [tickets, setTickets] = useState([]);
@@ -26,8 +32,27 @@ const ITManagerDashboard = ({ onSelectTicket }) => {
   const [loading, setLoading] = useState(true);
 
   // Active navigation tab
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'tickets' | 'workload' | 'sla'
+  const [activeTab, setActiveTab] = useState(initialTab); // 'overview' | 'tickets' | 'workload' | 'sla' | 'users'
   const [ticketFilter, setTicketFilter] = useState('ALL'); // 'ALL' | 'UNASSIGNED' | 'AT_RISK' | 'BREACHED'
+
+  // User Management & Registration Approvals State
+  const [allUsers, setAllUsers] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
+  const [approvingRoleMap, setApprovingRoleMap] = useState({});
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState('TECHNICIAN');
+  const [newUserDept, setNewUserDept] = useState('General');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // SLA Policy Management State
   const [slaPolicies, setSlaPolicies] = useState([]);
@@ -43,7 +68,7 @@ const ITManagerDashboard = ({ onSelectTicket }) => {
   useEffect(() => {
     loadManagerData();
     loadSLAPolicies();
-    loadTechnicians();
+    loadUsersAndPending();
   }, []);
 
   const loadManagerData = async () => {
@@ -71,13 +96,18 @@ const ITManagerDashboard = ({ onSelectTicket }) => {
     }
   };
 
-  const loadTechnicians = async () => {
+  const loadUsersAndPending = async () => {
     try {
-      const allUsers = await fetchAPI('/users');
-      const techs = allUsers.filter(u => u.role === 'TECHNICIAN' && u.status === 'ACTIVE');
+      const [usersList, pendingList] = await Promise.all([
+        fetchAPI('/users'),
+        fetchAPI('/users/pending')
+      ]);
+      setAllUsers(usersList);
+      setPendingUsers(pendingList);
+      const techs = usersList.filter(u => normalizeRole(u.role) === 'TECHNICIAN' && u.status === 'ACTIVE');
       setTechnicians(techs);
     } catch (e) {
-      console.error(e);
+      console.error('Failed to load users roster:', e);
     }
   };
 
@@ -122,6 +152,54 @@ const ITManagerDashboard = ({ onSelectTicket }) => {
       setAssigningTicketId(null);
       setSelectedTechId('');
       loadManagerData();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  };
+
+  const handleApproveUser = async (userId, userName) => {
+    try {
+      const assignedRole = approvingRoleMap[userId] || 'EMPLOYEE';
+      await fetchAPI(`/users/${userId}/approve`, {
+        method: 'PUT',
+        body: JSON.stringify({ role: assignedRole })
+      });
+      showToast(`User ${userName} approved as ${formatRoleLabel(assignedRole)}!`, 'success');
+      loadUsersAndPending();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  };
+
+  const handleRejectUser = async (userId, userName) => {
+    try {
+      await fetchAPI(`/users/${userId}/reject`, { method: 'PUT' });
+      showToast(`User ${userName} registration request rejected.`, 'error');
+      loadUsersAndPending();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  };
+
+  const handleCreatePrivilegedUser = async (e) => {
+    e.preventDefault();
+    try {
+      await fetchAPI('/users', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: newUserName,
+          email: newUserEmail,
+          password: newUserPassword,
+          role: newUserRole,
+          department: newUserDept
+        })
+      });
+      showToast(`Privileged user ${newUserName} provisioned successfully (${formatRoleLabel(newUserRole)})!`, 'success');
+      setShowCreateUserModal(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setNewUserPassword('');
+      loadUsersAndPending();
     } catch (e) {
       showToast(e.message, 'error');
     }
@@ -207,12 +285,45 @@ const ITManagerDashboard = ({ onSelectTicket }) => {
             >
               <Clock size={16} /> SLA Policies
             </button>
+            <button
+              className={`btn-secondary ${activeTab === 'users' ? 'active' : ''}`}
+              onClick={() => setActiveTab('users')}
+              style={{
+                background: activeTab === 'users' ? '#10b981' : pendingUsers.length > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255,255,255,0.05)',
+                color: '#fff',
+                borderColor: pendingUsers.length > 0 ? '#ef4444' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}
+            >
+              <UserCheck size={16} /> Users & Approvals
+              {pendingUsers.length > 0 && (
+                <span style={{
+                  background: '#ef4444',
+                  color: '#fff',
+                  borderRadius: 10,
+                  padding: '1px 6px',
+                  fontSize: '0.72rem',
+                  fontWeight: 800
+                }}>
+                  {pendingUsers.length}
+                </span>
+              )}
+            </button>
+            <button
+              className="btn-primary"
+              onClick={() => setShowCreateUserModal(true)}
+              style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px' }}
+            >
+              <UserPlus size={16} /> Provision User
+            </button>
           </div>
         </div>
       </div>
 
       {/* KPI Cards (Always visible at top for high-level awareness) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
         <div
           className="glass-panel stat-card"
           onClick={() => { setActiveTab('tickets'); setTicketFilter('UNASSIGNED'); }}
@@ -251,6 +362,20 @@ const ITManagerDashboard = ({ onSelectTicket }) => {
           <span className="stat-title">Active Technicians</span>
           <div className="stat-val" style={{ color: '#06b6d4' }}>{data?.techWorkload?.length || 0}</div>
           <span style={{ fontSize: '0.75rem', color: '#06b6d4' }}>View Workload Roster</span>
+        </div>
+
+        <div
+          className="glass-panel stat-card"
+          onClick={() => setActiveTab('users')}
+          style={{ cursor: 'pointer', transition: 'transform 0.2s', borderColor: pendingUsers.length > 0 ? 'rgba(239, 68, 68, 0.4)' : undefined }}
+        >
+          <span className="stat-title">Pending Approvals</span>
+          <div className="stat-val" style={{ color: pendingUsers.length > 0 ? '#ef4444' : '#10b981' }}>
+            {pendingUsers.length}
+          </div>
+          <span style={{ fontSize: '0.75rem', color: pendingUsers.length > 0 ? '#ef4444' : '#10b981' }}>
+            {pendingUsers.length > 0 ? 'Click to verify' : 'All accounts verified'}
+          </span>
         </div>
       </div>
 
@@ -592,6 +717,349 @@ const ITManagerDashboard = ({ onSelectTicket }) => {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: USER DIRECTORY, PRIVILEGED PROVISIONING & REGISTRATION APPROVALS */}
+      {activeTab === 'users' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Section Header Banner */}
+          <div className="glass-panel" style={{ padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
+                  👥 Staff Directory & User Registration Approvals
+                </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                  Verify pending public registrations, designate authorized roles, or provision privileged staff accounts.
+                </p>
+              </div>
+              <button
+                className="btn-primary"
+                onClick={() => setShowCreateUserModal(true)}
+                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <UserPlus size={16} /> + Provision Privileged User
+              </button>
+            </div>
+          </div>
+
+          {/* Section 1: Pending Registrations Queue (if any) */}
+          {pendingUsers.length > 0 && (
+            <div
+              className="glass-panel"
+              style={{
+                padding: 20,
+                border: '1px solid rgba(239, 68, 68, 0.4)',
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 23, 42, 0.8) 100%)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <AlertTriangle size={20} color="#ef4444" />
+                  <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
+                    Pending Account Registrations Requiring Approval ({pendingUsers.length})
+                  </h4>
+                </div>
+                <span className="badge badge-error" style={{ fontSize: '0.75rem' }}>Action Required</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {pendingUsers.map((pending) => (
+                  <div
+                    key={pending._id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 16,
+                      padding: '14px 18px',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: 12
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <img
+                        src={pending.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                        alt="Avatar"
+                        style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.95rem' }}>
+                          {pending.name}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {pending.email} • Dept: <span style={{ color: '#cbd5e1' }}>{pending.department || 'General'}</span>
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: 2 }}>
+                          Submitted: {new Date(pending.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Grant Role:</span>
+                        <select
+                          className="glass-input"
+                          style={{ padding: '6px 10px', fontSize: '0.82rem', width: 140 }}
+                          value={approvingRoleMap[pending._id] || 'EMPLOYEE'}
+                          onChange={(e) => setApprovingRoleMap({ ...approvingRoleMap, [pending._id]: e.target.value })}
+                        >
+                          <option value="EMPLOYEE">👤 Employee</option>
+                          <option value="TECHNICIAN">🧑‍💻 Technician</option>
+                          <option value="IT_MANAGER">👨‍💼 IT Manager</option>
+                          <option value="ASSET_MANAGER">🖥️ Asset Manager</option>
+                        </select>
+                      </div>
+
+                      <button
+                        className="btn-primary"
+                        onClick={() => handleApproveUser(pending._id, pending.name)}
+                        style={{ background: '#10b981', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', fontSize: '0.82rem' }}
+                      >
+                        <Check size={14} /> Approve Access
+                      </button>
+
+                      <button
+                        className="btn-secondary"
+                        onClick={() => handleRejectUser(pending._id, pending.name)}
+                        style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.4)', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', fontSize: '0.82rem' }}
+                      >
+                        <X size={14} /> Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section 2: All Users Directory */}
+          <div className="glass-panel" style={{ padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
+                  All System Users & Privileges ({allUsers.length})
+                </h4>
+                <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Active and provisioned personnel across departments.
+                </p>
+              </div>
+
+              {/* Search & Filter */}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative' }}>
+                  <Search size={14} style={{ position: 'absolute', left: 10, top: 10, color: 'var(--text-muted)' }} />
+                  <input
+                    type="text"
+                    className="glass-input"
+                    placeholder="Search name, email, dept..."
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    style={{ paddingLeft: 30, fontSize: '0.82rem', width: 220 }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {['ALL', 'IT_MANAGER', 'TECHNICIAN', 'ASSET_MANAGER', 'EMPLOYEE', 'ADMIN'].map((r) => (
+                    <button
+                      key={r}
+                      className={`btn-secondary ${roleFilter === r ? 'active' : ''}`}
+                      onClick={() => setRoleFilter(r)}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '0.74rem',
+                        background: roleFilter === r ? '#3b82f6' : 'rgba(255,255,255,0.03)',
+                        color: '#fff'
+                      }}
+                    >
+                      {r === 'ALL' ? 'All Roles' : formatRoleLabel(r)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="custom-table-container">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allUsers
+                    .filter((u) => {
+                      const matchesSearch =
+                        u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        (u.department && u.department.toLowerCase().includes(userSearch.toLowerCase()));
+                      const matchesRole = roleFilter === 'ALL' || normalizeRole(u.role) === roleFilter;
+                      return matchesSearch && matchesRole;
+                    })
+                    .map((user) => (
+                      <tr key={user._id}>
+                        <td style={{ fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <img
+                            src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                            alt="Avatar"
+                            style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                          {user.name}
+                        </td>
+                        <td style={{ color: 'var(--text-muted)' }}>{user.email}</td>
+                        <td style={{ color: '#cbd5e1' }}>{user.department || 'General'}</td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              normalizeRole(user.role) === 'ADMIN'
+                                ? 'badge-critical'
+                                : normalizeRole(user.role) === 'IT_MANAGER'
+                                ? 'badge-high'
+                                : normalizeRole(user.role) === 'TECHNICIAN'
+                                ? 'badge-primary'
+                                : normalizeRole(user.role) === 'ASSET_MANAGER'
+                                ? 'badge-warning'
+                                : 'badge-low'
+                            }`}
+                          >
+                            {formatRoleLabel(user.role)}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: 4,
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              background:
+                                user.status === 'ACTIVE'
+                                  ? 'rgba(16, 185, 129, 0.15)'
+                                  : user.status === 'PENDING'
+                                  ? 'rgba(245, 158, 11, 0.15)'
+                                  : 'rgba(239, 68, 68, 0.15)',
+                              color:
+                                user.status === 'ACTIVE'
+                                  ? '#34d399'
+                                  : user.status === 'PENDING'
+                                  ? '#fbbf24'
+                                  : '#f87171'
+                            }}
+                          >
+                            {user.status || 'ACTIVE'}
+                          </span>
+                        </td>
+                        <td style={{ color: 'var(--text-dim)', fontSize: '0.78rem' }}>
+                          {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Active'}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global Provision Privileged User Modal */}
+      {showCreateUserModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateUserModal(false)}>
+          <div className="modal-content" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <UserPlus color="#3b82f6" />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Provision Privileged User</h3>
+              </div>
+              <button
+                onClick={() => setShowCreateUserModal(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.4rem', cursor: 'pointer' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePrivilegedUser} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Full Name</label>
+                <input
+                  type="text"
+                  className="glass-input"
+                  placeholder="e.g. Sarah Connor"
+                  value={newUserName}
+                  onChange={(e) => setNewUserName(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Email Address</label>
+                <input
+                  type="email"
+                  className="glass-input"
+                  placeholder="s.connor@servicedesk.com"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Temporary Password</label>
+                <input
+                  type="password"
+                  className="glass-input"
+                  placeholder="Minimum 6 characters"
+                  value={newUserPassword}
+                  onChange={(e) => setNewUserPassword(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Assigned Role</label>
+                <select
+                  className="glass-input"
+                  value={newUserRole}
+                  onChange={(e) => setNewUserRole(e.target.value)}
+                >
+                  <option value="TECHNICIAN">🧑‍💻 TECHNICIAN</option>
+                  <option value="IT_MANAGER">👨‍💼 IT MANAGER</option>
+                  <option value="ASSET_MANAGER">🖥️ ASSET MANAGER</option>
+                  <option value="EMPLOYEE">👤 EMPLOYEE</option>
+                  <option value="ADMIN">👑 SYSTEM ADMIN</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>Department</label>
+                <input
+                  type="text"
+                  className="glass-input"
+                  placeholder="e.g. IT Operations, Infrastructure, Engineering"
+                  value={newUserDept}
+                  onChange={(e) => setNewUserDept(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                <button type="button" className="btn-secondary" onClick={() => setShowCreateUserModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
+                  Provision User
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

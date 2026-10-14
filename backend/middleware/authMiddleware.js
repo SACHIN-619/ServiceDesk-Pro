@@ -1,6 +1,13 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
+export const normalizeRole = (r) => {
+  if (!r) return '';
+  let role = String(r).trim().toUpperCase().replace(/[\s-]+/g, '_');
+  if (role === 'SYSTEM_ADMIN') return 'ADMIN';
+  return role;
+};
+
 export const protect = async (req, res, next) => {
   let token;
 
@@ -28,6 +35,8 @@ export const protect = async (req, res, next) => {
       return res.status(403).json({ message: 'Account has been deactivated or rejected.' });
     }
 
+    // Ensure role on user is normalized
+    user.role = normalizeRole(user.role);
     req.user = user;
     next();
   } catch (error) {
@@ -41,17 +50,15 @@ export const authorize = (...roles) => {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
-    // Normalize ADMIN / SYSTEM_ADMIN roles
-    const userRole = req.user.role;
-    const allowedRoles = new Set(roles);
-    if (allowedRoles.has('ADMIN') || allowedRoles.has('SYSTEM_ADMIN')) {
-      allowedRoles.add('ADMIN');
+    const userRole = normalizeRole(req.user.role);
+    const allowedRoles = new Set(roles.map(normalizeRole));
+    if (allowedRoles.has('ADMIN')) {
       allowedRoles.add('SYSTEM_ADMIN');
     }
 
     if (!allowedRoles.has(userRole)) {
       return res.status(403).json({
-        message: `User role '${userRole}' is not authorized to access this resource`
+        message: `User role '${req.user.role}' is not authorized to access this resource`
       });
     }
 

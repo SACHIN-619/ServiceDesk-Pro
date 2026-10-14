@@ -58,8 +58,9 @@ export const createUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
+    const cleanRole = role ? String(role).trim().toUpperCase().replace(/[\s-]+/g, '_') : 'EMPLOYEE';
     const allowedRoles = ['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER', 'TECHNICIAN', 'EMPLOYEE', 'ASSET_MANAGER'];
-    const userRole = role && allowedRoles.includes(role) ? (role === 'SYSTEM_ADMIN' ? 'ADMIN' : role) : 'EMPLOYEE';
+    const userRole = allowedRoles.includes(cleanRole) ? (cleanRole === 'SYSTEM_ADMIN' ? 'ADMIN' : cleanRole) : 'EMPLOYEE';
 
     const user = await User.create({
       name: name.trim(),
@@ -105,8 +106,9 @@ export const approveUser = async (req, res) => {
     user.status = 'ACTIVE';
     if (req.body.role) {
       const allowedRoles = ['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER', 'TECHNICIAN', 'EMPLOYEE', 'ASSET_MANAGER'];
-      if (allowedRoles.includes(req.body.role)) {
-        user.role = req.body.role === 'SYSTEM_ADMIN' ? 'ADMIN' : req.body.role;
+      const cleanRole = String(req.body.role).trim().toUpperCase().replace(/[\s-]+/g, '_');
+      if (allowedRoles.includes(cleanRole)) {
+        user.role = cleanRole === 'SYSTEM_ADMIN' ? 'ADMIN' : cleanRole;
       }
     }
     if (req.body.department) user.department = req.body.department;
@@ -226,8 +228,9 @@ export const updateUserByAdmin = async (req, res) => {
     if (name) user.name = name.trim();
     if (role) {
       const allowedRoles = ['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER', 'TECHNICIAN', 'EMPLOYEE', 'ASSET_MANAGER'];
-      if (allowedRoles.includes(role)) {
-        user.role = role === 'SYSTEM_ADMIN' ? 'ADMIN' : role;
+      const cleanRole = String(role).trim().toUpperCase().replace(/[\s-]+/g, '_');
+      if (allowedRoles.includes(cleanRole)) {
+        user.role = cleanRole === 'SYSTEM_ADMIN' ? 'ADMIN' : cleanRole;
       }
     }
     if (department) user.department = department;

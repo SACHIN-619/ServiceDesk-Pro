@@ -53,7 +53,7 @@ export const createTicket = async (req, res) => {
     });
 
     // Notify IT Managers and Admins of new open ticket
-    const managers = await User.find({ role: { $in: ['IT_MANAGER', 'ADMIN', 'SYSTEM_ADMIN'] } });
+    const managers = await User.find({ role: { $in: ['IT_MANAGER', 'IT MANAGER', 'ADMIN', 'SYSTEM_ADMIN'] } });
     for (const manager of managers) {
       await createAndEmitNotification({
         recipient: manager._id,

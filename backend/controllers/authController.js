@@ -96,14 +96,14 @@ export const registerUser = async (req, res) => {
     });
 
     if (!isFirstUser) {
-      // Notify all System Admins of the new registration request
-      const adminUsers = await User.find({ role: { $in: ['ADMIN', 'SYSTEM_ADMIN'] } });
-      for (const admin of adminUsers) {
+      // Notify all System Admins and IT Managers of the new registration request
+      const approvers = await User.find({ role: { $in: ['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER'] } });
+      for (const approver of approvers) {
         await createAndEmitNotification({
-          recipient: admin._id,
+          recipient: approver._id,
           title: 'New Account Approval Request',
           message: `Employee "${user.name}" (${user.email}) has requested account access.`,
-          link: '/admin?tab=pending',
+          link: '/users',
           type: 'USER_REGISTRATION'
         });
       }

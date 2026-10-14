@@ -133,8 +133,8 @@ Public Registration (name, email, password)
 | **Publish Knowledge Articles** | ❌ | ✅ | ✅ | ❌ | ✅ |
 | **Manage Assets & Repairs** | ❌ | Maintenance | Read/Link | Full CRUD | Full CRUD |
 | **Manage SLA Policies** | ❌ | ❌ | ✅ | ❌ | ✅ |
-| **Approve Registrations** | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **Provision Privileged Users** | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **Approve Registrations** | ❌ | ❌ | ✅ | ❌ | ✅ |
+| **Provision Privileged Users** | ❌ | ❌ | ✅ | ❌ | ✅ |
 | **View Audit Logs & Analytics** | ❌ | ❌ | ✅ | ❌ | ✅ |
 
 ### 1. System Administrator
@@ -146,6 +146,7 @@ Public Registration (name, email, password)
 ### 2. IT Manager
 - **Command Center**: Monitors unassigned tickets, SLA risk queues, and active workloads.
 - **Dispatch**: Assigns tickets to available technicians (`PATCH /api/tickets/:id/assign`).
+- **User Approvals & Provisioning**: Approves/rejects pending account registrations (`PUT /api/users/:id/approve`) and provisions privileged staff accounts (`POST /api/users`).
 - **Escalation**: Receives automated real-time breach notifications when SLA thresholds are exceeded.
 
 ### 3. Technician

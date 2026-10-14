@@ -4,7 +4,7 @@ import { useNotification } from '../context/NotificationContext';
 import { Shield, Users, Clock, AlertTriangle, FileText, CheckCircle, XCircle, UserPlus, Search, Edit3, Save } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
 
-const AdminDashboard = ({ onSelectTicket }) => {
+const AdminDashboard = ({ onSelectTicket, initialTab = 'overview' }) => {
   const { showToast } = useNotification();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,8 +12,14 @@ const AdminDashboard = ({ onSelectTicket }) => {
   // User Management State
   const [users, setUsers] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'users' | 'pending' | 'sla'
+  const [activeTab, setActiveTab] = useState(initialTab); // 'overview' | 'users' | 'pending' | 'sla'
   const [userSearch, setUserSearch] = useState('');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // SLA Policies State
   const [slaPolicies, setSlaPolicies] = useState([]);

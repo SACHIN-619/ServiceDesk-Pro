@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { fetchAPI } from '../services/api';
+import { normalizeRole } from '../utils/roles';
 
 const AuthContext = createContext();
 
@@ -13,7 +14,7 @@ export const DEMO_CREDENTIALS = {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [currentRole, setCurrentRole] = useState(localStorage.getItem('servicedesk_role') || 'EMPLOYEE');
+  const [currentRole, setCurrentRole] = useState(() => normalizeRole(localStorage.getItem('servicedesk_role') || 'EMPLOYEE'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,9 +31,11 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const data = await fetchAPI('/auth/me');
-      setUser(data);
-      setCurrentRole(data.role);
-      localStorage.setItem('servicedesk_role', data.role);
+      const normRole = normalizeRole(data.role);
+      const normalizedUser = { ...data, role: normRole };
+      setUser(normalizedUser);
+      setCurrentRole(normRole);
+      localStorage.setItem('servicedesk_role', normRole);
     } catch (err) {
       console.warn('Authentication check failed:', err.message);
       localStorage.removeItem('servicedesk_token');
@@ -50,11 +53,13 @@ export const AuthProvider = ({ children }) => {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
+      const normRole = normalizeRole(data.role);
+      const normalizedUser = { ...data, role: normRole };
       localStorage.setItem('servicedesk_token', data.token);
-      localStorage.setItem('servicedesk_role', data.role);
-      setUser(data);
-      setCurrentRole(data.role);
-      return data;
+      localStorage.setItem('servicedesk_role', normRole);
+      setUser(normalizedUser);
+      setCurrentRole(normRole);
+      return normalizedUser;
     } catch (err) {
       throw err;
     }
@@ -107,7 +112,7 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       user,
-      currentRole: user?.role || currentRole,
+      currentRole: normalizeRole(user?.role || currentRole),
       switchRole,
       login,
       register,

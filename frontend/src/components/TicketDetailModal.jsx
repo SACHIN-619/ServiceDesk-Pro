@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { normalizeRole, isRoleMatch } from '../utils/roles';
 import {
   X,
   Clock,
@@ -40,7 +41,7 @@ const TicketDetailModal = ({ ticketId, isOpen, onClose, onTicketUpdated }) => {
   useEffect(() => {
     if (isOpen && ticketId) {
       loadTicketDetails();
-      if (['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER'].includes(currentRole)) {
+      if (isRoleMatch(currentRole, ['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER'])) {
         loadTechnicians();
       }
     }

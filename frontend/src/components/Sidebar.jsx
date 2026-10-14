@@ -13,9 +13,11 @@ import {
   Bot,
   Workflow
 } from 'lucide-react';
+import { normalizeRole, formatRoleLabel } from '../utils/roles';
 
 const Sidebar = () => {
   const { currentRole } = useAuth();
+  const normRole = normalizeRole(currentRole);
 
   const allRoles = ['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER', 'TECHNICIAN', 'EMPLOYEE', 'ASSET_MANAGER'];
   const adminRoles = ['ADMIN', 'SYSTEM_ADMIN'];
@@ -31,16 +33,18 @@ const Sidebar = () => {
     { path: '/knowledge', label: 'Knowledge Base (RAG)', icon: BookOpen, roles: allRoles },
     { path: '/analytics', label: 'Analytics & Reports', icon: BarChart3, roles: managerAndAdminRoles },
     { path: '/audit', label: 'Audit Trail', icon: FileText, roles: managerAndAdminRoles },
-    { path: '/users', label: 'Users & Roles', icon: Users, roles: adminRoles },
+    { path: '/users', label: 'Users & Roles', icon: Users, roles: managerAndAdminRoles },
   ];
 
-  const filteredNav = navItems.filter((item) => item.roles.includes(currentRole));
+  const filteredNav = navItems.filter((item) =>
+    item.roles.map(normalizeRole).includes(normRole)
+  );
 
   return (
-    <aside className="glass-panel" style={{ width: 240, padding: 16, height: 'calc(100vh - 120px)', sticky: true, top: 100 }}>
+    <aside className="glass-panel" style={{ width: 240, padding: 16, height: 'calc(100vh - 120px)', position: 'sticky', top: 100 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '8px 12px' }}>
-          Navigation ({currentRole})
+          Navigation ({formatRoleLabel(normRole)})
         </span>
 
         {filteredNav.map((item) => {

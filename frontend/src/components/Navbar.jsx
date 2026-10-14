@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { Shield, Bell, Plus, User, Sparkles, LogOut, CheckCircle, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { normalizeRole, formatRoleLabel } from '../utils/roles';
 
 const Navbar = ({ onCreateTicketClick, onOpenAuthModal }) => {
   const { user, currentRole, switchRole, logout, updateProfile } = useAuth();
@@ -29,7 +30,7 @@ const Navbar = ({ onCreateTicketClick, onOpenAuthModal }) => {
   ];
 
   const handleRoleSwitch = async (roleKey) => {
-    if (roleKey === currentRole && user) return;
+    if (normalizeRole(roleKey) === normalizeRole(currentRole) && user) return;
     setSwitchingRole(true);
     try {
       await switchRole(roleKey);
@@ -253,7 +254,7 @@ const Navbar = ({ onCreateTicketClick, onOpenAuthModal }) => {
                   {user?.name || 'User Account'}
                 </span>
                 <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>
-                  {currentRole} ({user?.department || 'General'})
+                  {formatRoleLabel(currentRole)} ({user?.department || 'General'})
                 </span>
               </div>
             </div>

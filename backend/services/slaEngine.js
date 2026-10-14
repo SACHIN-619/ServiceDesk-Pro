@@ -60,7 +60,7 @@ export const checkSLABreaches = async () => {
         details: `Ticket #${ticket.ticketId} (${ticket.priority} priority) failed response SLA deadline.`
       });
 
-      const managers = await User.find({ role: { $in: ['IT_MANAGER', 'ADMIN', 'SYSTEM_ADMIN'] } });
+      const managers = await User.find({ role: { $in: ['IT_MANAGER', 'IT MANAGER', 'ADMIN', 'SYSTEM_ADMIN'] } });
       for (const mgr of managers) {
         await createAndEmitNotification({
           recipient: mgr._id,
@@ -92,7 +92,7 @@ export const checkSLABreaches = async () => {
         details: `Ticket #${ticket.ticketId} (${ticket.priority} priority) failed resolution SLA deadline.`
       });
 
-      const managers = await User.find({ role: { $in: ['IT_MANAGER', 'ADMIN', 'SYSTEM_ADMIN'] } });
+      const managers = await User.find({ role: { $in: ['IT_MANAGER', 'IT MANAGER', 'ADMIN', 'SYSTEM_ADMIN'] } });
       for (const mgr of managers) {
         await createAndEmitNotification({
           recipient: mgr._id,

@@ -3,6 +3,7 @@ import { fetchAPI } from '../services/api';
 import { BookOpen, Search, ThumbsUp, Eye, Sparkles, Plus, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
+import { isRoleMatch } from '../utils/roles';
 
 const KnowledgeBasePage = () => {
   const { currentRole } = useAuth();
@@ -79,7 +80,7 @@ const KnowledgeBasePage = () => {
               </p>
             </div>
           </div>
-          {['ADMIN', 'IT_MANAGER', 'TECHNICIAN'].includes(currentRole) && (
+          {isRoleMatch(currentRole, ['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER', 'TECHNICIAN']) && (
             <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
               <Plus size={18} /> Add KB Solution Article
             </button>

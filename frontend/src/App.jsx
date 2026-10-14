@@ -22,21 +22,17 @@ import AssetsPage from './pages/AssetsPage';
 import AuditLogsPage from './pages/AuditLogsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import { fetchAPI } from './services/api';
+import { normalizeRole, isRoleMatch, formatRoleLabel } from './utils/roles';
 
 const ProtectedRoute = ({ allowedRoles, children }) => {
   const { currentRole } = useAuth();
-  const normalizedAllowed = new Set(allowedRoles);
-  if (normalizedAllowed.has('ADMIN') || normalizedAllowed.has('SYSTEM_ADMIN')) {
-    normalizedAllowed.add('ADMIN');
-    normalizedAllowed.add('SYSTEM_ADMIN');
-  }
 
-  if (!normalizedAllowed.has(currentRole)) {
+  if (!isRoleMatch(currentRole, allowedRoles)) {
     return (
       <div className="glass-panel" style={{ padding: 40, textAlign: 'center', margin: '40px auto', maxWidth: 600 }}>
         <h3 style={{ color: '#ef4444', marginBottom: 12 }}>🚫 Access Restricted</h3>
         <p style={{ color: 'var(--text-muted)' }}>
-          Your active authenticated role (<strong>{currentRole}</strong>) is not authorized to access this section.
+          Your active authenticated role (<strong>{formatRoleLabel(currentRole)}</strong>) is not authorized to access this section.
         </p>
       </div>
     );
@@ -93,7 +89,8 @@ const MainLayout = () => {
 
   // Render role-tailored home dashboard
   const renderDashboardByRole = () => {
-    switch (currentRole) {
+    const role = normalizeRole(currentRole);
+    switch (role) {
       case 'ADMIN':
       case 'SYSTEM_ADMIN':
         return <AdminDashboard onSelectTicket={handleOpenDetail} />;
@@ -148,7 +145,7 @@ const MainLayout = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
-                      📋 IT Support Tickets ({currentRole})
+                      📋 IT Support Tickets ({formatRoleLabel(currentRole)})
                     </h2>
                     <button className="btn-primary" onClick={() => setIsCreateModalOpen(true)}>
                       + Create Ticket
@@ -167,7 +164,11 @@ const MainLayout = () => {
               path="/sla"
               element={
                 <ProtectedRoute allowedRoles={['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER']}>
-                  <AdminDashboard onSelectTicket={handleOpenDetail} />
+                  {normalizeRole(currentRole) === 'IT_MANAGER' ? (
+                    <ITManagerDashboard onSelectTicket={handleOpenDetail} initialTab="sla" />
+                  ) : (
+                    <AdminDashboard onSelectTicket={handleOpenDetail} />
+                  )}
                 </ProtectedRoute>
               }
             />
@@ -207,8 +208,12 @@ const MainLayout = () => {
             <Route
               path="/users"
               element={
-                <ProtectedRoute allowedRoles={['ADMIN', 'SYSTEM_ADMIN']}>
-                  <AdminDashboard onSelectTicket={handleOpenDetail} />
+                <ProtectedRoute allowedRoles={['ADMIN', 'SYSTEM_ADMIN', 'IT_MANAGER']}>
+                  {normalizeRole(currentRole) === 'IT_MANAGER' ? (
+                    <ITManagerDashboard onSelectTicket={handleOpenDetail} initialTab="users" />
+                  ) : (
+                    <AdminDashboard onSelectTicket={handleOpenDetail} />
+                  )}
                 </ProtectedRoute>
               }
             />
