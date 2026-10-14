@@ -127,14 +127,55 @@ const callGroqChat = async (apiKey, model, systemPrompt, userPrompt) => {
 };
 
 /**
+ * Gemini LLM API Requester (Secondary Fallback)
+ */
+const callGeminiChat = async (apiKey, model, systemPrompt, userPrompt) => {
+  const targetModel = model || 'gemini-1.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [{ text: systemPrompt }]
+      },
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: userPrompt }]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: 'application/json'
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Gemini API Error (${response.status}): ${errText}`);
+  }
+
+  const json = await response.json();
+  const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!rawText) {
+    throw new Error('Gemini API returned an empty response candidate.');
+  }
+
+  return JSON.parse(rawText);
+};
+
+/**
  * Classify ticket using Groq / Gemini LLM or Heuristic Fallback
  */
 export const classifyTicket = async (title = '', description = '') => {
   const config = getAIConfig();
 
-  if (config.enabled && config.provider === 'groq' && config.groqApiKey) {
-    try {
-      const systemPrompt = `You are an expert IT Service Management (ITSM) triage system for ServiceDesk Pro.
+  const systemPrompt = `You are an expert IT Service Management (ITSM) triage system for ServiceDesk Pro.
 Classify the given ticket into the exact JSON structure:
 {
   "category": string (Must be EXACTLY one of: "Network & Connectivity", "Hardware & Devices", "Access & Identity", "Software & SaaS", "Peripherals", "General IT"),
@@ -143,13 +184,15 @@ Classify the given ticket into the exact JSON structure:
   "confidence": number (Between 0.70 and 0.99),
   "suggestedKeywords": string[] (2-4 relevant IT keywords)
 }`;
+  const userPrompt = `Ticket Title: ${title}\nTicket Description: ${description}`;
 
-      const userPrompt = `Ticket Title: ${title}\nTicket Description: ${description}`;
+  const validCategories = ['Network & Connectivity', 'Hardware & Devices', 'Access & Identity', 'Software & SaaS', 'Peripherals', 'General IT'];
+  const validPriorities = ['Critical', 'High', 'Medium', 'Low'];
+
+  // 1. Try Primary LLM (Groq)
+  if (config.enabled && (config.provider === 'groq' || !config.provider) && config.groqApiKey) {
+    try {
       const result = await callGroqChat(config.groqApiKey, config.groqModel, systemPrompt, userPrompt);
-
-      const validCategories = ['Network & Connectivity', 'Hardware & Devices', 'Access & Identity', 'Software & SaaS', 'Peripherals', 'General IT'];
-      const validPriorities = ['Critical', 'High', 'Medium', 'Low'];
-
       const finalCategory = validCategories.includes(result.category) ? result.category : 'General IT';
       const finalPriority = validPriorities.includes(result.priority) ? result.priority : 'Medium';
 
@@ -163,10 +206,33 @@ Classify the given ticket into the exact JSON structure:
         provider: 'groq'
       };
     } catch (err) {
-      console.warn('[AI Service Warning]: Groq ticket classification failed, falling back to heuristic:', err.message);
+      console.warn('[AI Service Warning]: Groq ticket classification failed:', err.message);
     }
   }
 
+  // 2. Try Secondary LLM Fallback (Gemini)
+  if (config.enabled && config.geminiApiKey) {
+    try {
+      console.info('[AI Service Info]: Attempting Gemini fallback for ticket classification...');
+      const result = await callGeminiChat(config.geminiApiKey, config.geminiModel, systemPrompt, userPrompt);
+      const finalCategory = validCategories.includes(result.category) ? result.category : 'General IT';
+      const finalPriority = validPriorities.includes(result.priority) ? result.priority : 'Medium';
+
+      return {
+        category: finalCategory,
+        priority: finalPriority,
+        probableIssue: result.probableIssue || 'Technical Support Request',
+        confidence: typeof result.confidence === 'number' ? Math.min(0.99, Math.max(0.7, result.confidence)) : 0.92,
+        suggestedKeywords: Array.isArray(result.suggestedKeywords) ? result.suggestedKeywords : [finalCategory],
+        isAiGenerated: true,
+        provider: 'gemini'
+      };
+    } catch (geminiErr) {
+      console.warn('[AI Service Warning]: Gemini ticket classification fallback failed:', geminiErr.message);
+    }
+  }
+
+  // 3. Fallback to offline rule-based heuristic classification
   return heuristicClassify(title, description);
 };
 
@@ -207,12 +273,9 @@ export const recommendSolutions = async (title = '', description = '') => {
       };
     }
 
-    // Step 3: If LLM is available, ground response strictly in retrieved KB articles
-    if (config.enabled && config.provider === 'groq' && config.groqApiKey) {
-      try {
-        const kbContext = articles.map((a, i) => `[Article ${i + 1} - "${a.title}"]\nProblem: ${a.problem}\nSolution: ${a.solution}`).join('\n\n');
+    const kbContext = articles.map((a, i) => `[Article ${i + 1} - "${a.title}"]\nProblem: ${a.problem}\nSolution: ${a.solution}`).join('\n\n');
 
-        const systemPrompt = `You are an ITSM technical resolution assistant.
+    const systemPrompt = `You are an ITSM technical resolution assistant.
 You are provided with INTERNAL KNOWLEDGE BASE ARTICLES.
 INSTRUCTIONS:
 1. Generate 3 to 4 concise, actionable troubleshooting steps for the technician.
@@ -221,10 +284,12 @@ INSTRUCTIONS:
 4. Do NOT hallucinate or reference outside knowledge.
 5. Return JSON: { "suggestedResolutionSteps": string[] }`;
 
-        const userPrompt = `USER TICKET ISSUE:\nTitle: ${title}\nDescription: ${description}\n\nRETRIEVED KNOWLEDGE BASE CONTEXT:\n${kbContext}`;
+    const userPrompt = `USER TICKET ISSUE:\nTitle: ${title}\nDescription: ${description}\n\nRETRIEVED KNOWLEDGE BASE CONTEXT:\n${kbContext}`;
 
+    // Step 3: Try Primary LLM (Groq)
+    if (config.enabled && (config.provider === 'groq' || !config.provider) && config.groqApiKey) {
+      try {
         const result = await callGroqChat(config.groqApiKey, config.groqModel, systemPrompt, userPrompt);
-
         if (result && Array.isArray(result.suggestedResolutionSteps) && result.suggestedResolutionSteps.length > 0) {
           return {
             articles,
@@ -234,11 +299,29 @@ INSTRUCTIONS:
           };
         }
       } catch (err) {
-        console.warn('[AI Service Warning]: Groq RAG synthesis failed, using direct article excerpts:', err.message);
+        console.warn('[AI Service Warning]: Groq RAG synthesis failed, checking Gemini fallback:', err.message);
       }
     }
 
-    // Fallback grounded steps directly from retrieved articles
+    // Step 4: Try Secondary LLM Fallback (Gemini)
+    if (config.enabled && config.geminiApiKey) {
+      try {
+        console.info('[AI Service Info]: Attempting Gemini fallback for Grounded RAG synthesis...');
+        const geminiResult = await callGeminiChat(config.geminiApiKey, config.geminiModel, systemPrompt, userPrompt);
+        if (geminiResult && Array.isArray(geminiResult.suggestedResolutionSteps) && geminiResult.suggestedResolutionSteps.length > 0) {
+          return {
+            articles,
+            suggestedResolutionSteps: geminiResult.suggestedResolutionSteps,
+            isAiGenerated: true,
+            provider: 'gemini'
+          };
+        }
+      } catch (geminiErr) {
+        console.warn('[AI Service Warning]: Gemini RAG synthesis fallback failed:', geminiErr.message);
+      }
+    }
+
+    // Step 5: Fallback grounded steps directly from retrieved articles
     const steps = articles.map((art, idx) => `${idx + 1}. [${art.title}]: ${art.solution.replace(/\n+/g, ' ').substring(0, 160)}...`);
 
     return {
